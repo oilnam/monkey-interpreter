@@ -39,6 +39,15 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[initPosition:l.position]
 }
 
+// read a whole number
+func (l *Lexer) readNumber() string {
+	initPosition := l.position
+	for isNumber(l.ch) {
+		l.readChar()
+	}
+	return l.input[initPosition:l.position]
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -68,6 +77,11 @@ func (l *Lexer) NextToken() token.Token {
 			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
 			return tok // so we don't call readChar again at the end
+		}
+		if isNumber(l.ch) {
+			tok.Literal = l.readNumber()
+			tok.Type = token.INT
+			return tok // so we don't call readChar again at the end
 		} else {
 			tok = newToken(token.ILLEGAL, l.ch)
 		}
@@ -93,4 +107,8 @@ func newToken(tokenType token.TokenType, ch byte) token.Token {
 
 func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+func isNumber(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }
