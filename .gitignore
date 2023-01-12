@@ -1,0 +1,38 @@
+# Black magic to excldue all files without extension (Go binaries)
+*
+!/**/
+!*.*
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Coverage tool outputs
+*.out
+cover.html
+
+# Misc
+.idea
+.vscode
+*.csv
+*.log
+.DS_Store
+
+# Experiments
+exp
+
+# config
+local.env
+.env*
+*.env
+config.yml
+
+!Dockerfile
+
+db_data/
