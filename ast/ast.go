@@ -34,6 +34,15 @@ func (p *Program) TokenLiteral() string {
 	}
 }
 
+type Identifier struct {
+	Token token.Token // the token.IDENT token
+	Value string      // the name of the variable (x)
+}
+
+func (i *Identifier) expressionNode()      {}
+func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
+
+// LET statement
 type LetStatement struct {
 	// e.g. `let x = 5 + 5`
 	Token token.Token // the token.LET token (let)
@@ -44,10 +53,11 @@ type LetStatement struct {
 func (ls *LetStatement) statementNode()       {}
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 
-type Identifier struct {
-	Token token.Token // the token.IDENT token
-	Value string      // the name of the variable (x)
+// RETURN statement
+type ReturnStatement struct {
+	Token       token.Token // the token.RETURN token
+	ReturnValue Expression
 }
 
-func (i *Identifier) expressionNode()      {}
-func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
+func (rs *ReturnStatement) statementNode()       {}
+func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
