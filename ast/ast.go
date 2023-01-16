@@ -23,6 +23,7 @@ type Expression interface {
 // Program is the root node of every AST produced
 type Program struct {
 	Statements []Statement
+	// I bet at some point we'll have to add Expressions here too?
 }
 
 func (p *Program) TokenLiteral() string {
@@ -45,7 +46,7 @@ func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 
 type Identifier struct {
 	Token token.Token // the token.IDENT token
-	value string
+	Value string      // the name of the variable (x)
 }
 
 func (i *Identifier) expressionNode()      {}
