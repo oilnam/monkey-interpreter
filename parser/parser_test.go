@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
 	"monkey/ast"
 	"monkey/lexer"
 	"testing"
@@ -22,9 +24,10 @@ func TestLetStatements(t *testing.T) {
 		t.Fatalf("parse program returned nil")
 	}
 
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d", len(program.Statements))
+	for i, s := range program.Statements {
+		fmt.Printf("%d => %s\n", i, s)
 	}
+	assert.Len(t, program.Statements, 3)
 
 	tests := []struct {
 		expectedIdentifier string
@@ -91,9 +94,7 @@ func TestReturnStatements(t *testing.T) {
 	program := p.ParseProgram()
 	checkParserErrors(t, p)
 
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d", len(program.Statements))
-	}
+	assert.Len(t, program.Statements, 3)
 
 	for _, stmt := range program.Statements {
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
@@ -106,5 +107,27 @@ func TestReturnStatements(t *testing.T) {
 				returnStmt.TokenLiteral())
 		}
 	}
+}
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an Identifier (foobar)
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	assert.True(t, ok)
+
+	assert.Equal(t, "foobar", ident.Value)
+	assert.Equal(t, "foobar", ident.TokenLiteral())
 
 }
