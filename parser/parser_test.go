@@ -129,5 +129,26 @@ func TestIdentifierExpression(t *testing.T) {
 
 	assert.Equal(t, "foobar", ident.Value)
 	assert.Equal(t, "foobar", ident.TokenLiteral())
+}
+
+func TestIntegerLiteralExpression(t *testing.T) {
+	input := "5;"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an IntegerLiteral
+	ident, ok := stmt.Expression.(*ast.IntegerLiteral)
+	assert.True(t, ok)
+	assert.Equal(t, int64(5), ident.Value)
+	assert.Equal(t, "5", ident.TokenLiteral())
 
 }
