@@ -142,9 +142,9 @@ type InfixExpression struct {
 	Right    Expression
 }
 
-func (oe *InfixExpression) expressionNode()      {}
-func (oe *InfixExpression) TokenLiteral() string { return oe.Token.Literal }
-func (oe *InfixExpression) String() string {
+func (ie *InfixExpression) expressionNode()      {}
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *InfixExpression) String() string {
 	// "(left, operator, right)"
-	return "(" + oe.Left.String() + " " + oe.Operator + " " + oe.Right.String() + ")"
+	return "(" + ie.Left.String() + " " + ie.Operator + " " + ie.Right.String() + ")"
 }

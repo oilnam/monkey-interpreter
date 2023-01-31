@@ -163,6 +163,7 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
 }
 
+// parses a whole exp statement, such as 1 + 2 + 3
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
@@ -178,7 +179,8 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	// check if we have a prefix parsing function associated with
-	// the current token type
+	// the current token type; the first element of an exp is always one of
+	// IDENT, INT, BANG, MINUS
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
 		p.errors = append(p.errors, fmt.Sprintf("no prefix parse function found for %s", p.curToken.Type))
@@ -195,7 +197,6 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		p.nextToken()
 		leftExp = infix(leftExp)
 	}
-
 	return leftExp
 }
 
@@ -271,6 +272,5 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	precedence := p.curPrecedence()
 	p.nextToken()
 	exp.Right = p.parseExpression(precedence)
-
 	return exp
 }
