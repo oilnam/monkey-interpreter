@@ -173,6 +173,80 @@ func TestBooleanExpression(t *testing.T) {
 	assert.Equal(t, "true", ident.TokenLiteral())
 }
 
+func TestIfExpression(t *testing.T) {
+	input := "if (x < y) { x }"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an IfExpression
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	assert.True(t, ok)
+
+	if !testInfixExpression(t, exp.Condition, "x", "<", "y") {
+		return
+	}
+
+	// got 1 conseq (x) of type ExpressionSt
+	assert.Len(t, exp.Consequence.Statements, 1)
+	cons, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	if !testIdentifier(t, cons.Expression, "x") {
+		return
+	}
+
+	assert.Nil(t, exp.Alternative)
+}
+
+func TestIfElseExpression(t *testing.T) {
+	input := "if (x < y) { x } else { y }"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an IfExpression
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	assert.True(t, ok)
+
+	if !testInfixExpression(t, exp.Condition, "x", "<", "y") {
+		return
+	}
+
+	// got 1 conseq (x) of type ExpressionSt
+	assert.Len(t, exp.Consequence.Statements, 1)
+	cons, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	if !testIdentifier(t, cons.Expression, "x") {
+		return
+	}
+
+	assert.Len(t, exp.Alternative.Statements, 1)
+	alt, ok := exp.Alternative.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	if !testIdentifier(t, alt.Expression, "y") {
+		return
+	}
+}
+
 func TestParsingPrefixExpressions(t *testing.T) {
 	prefixTests := []struct {
 		input    string

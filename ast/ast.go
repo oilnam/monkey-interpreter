@@ -158,3 +158,36 @@ func (ie *InfixExpression) String() string {
 	// "(left, operator, right)"
 	return "(" + ie.Left.String() + " " + ie.Operator + " " + ie.Right.String() + ")"
 }
+
+// IF EXPRESSION
+type IfExpression struct {
+	Token       token.Token // the `if` token
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ie *IfExpression) expressionNode()      {}
+func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IfExpression) String() string {
+	s := "if" + ie.Condition.String() + " " + ie.Consequence.String()
+	if ie.Alternative != nil {
+		s += "else " + ie.Alternative.String()
+	}
+	return s
+}
+
+type BlockStatement struct {
+	Token      token.Token // the `{` token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var out string
+	for _, s := range bs.Statements {
+		out += s.String()
+	}
+	return out
+}
