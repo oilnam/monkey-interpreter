@@ -30,6 +30,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionExpression)
 
 	// register INFIX parse functions
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -342,4 +343,37 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		p.nextToken()
 	}
 	return block
+}
+
+func (p *Parser) parseFunctionExpression() ast.Expression {
+	exp := &ast.FunctionLiteral{Token: p.curToken}
+
+	// expect ( and move on it
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+	p.nextToken() // move past (
+
+	// go on until ) or EOF
+	for !p.curTokenIs(token.RPAREN) && !p.curTokenIs(token.EOF) {
+		// skip commas
+		if p.curTokenIs(token.COMMA) {
+			p.nextToken()
+			continue
+		}
+		// create identifier and add it to params
+		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		exp.Params = append(exp.Params, ident)
+		p.nextToken()
+	}
+
+	// expect { and move on curToken
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	// parse the whole { ... } block
+	exp.Body = p.parseBlockStatement()
+
+	return exp
 }
