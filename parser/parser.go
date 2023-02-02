@@ -103,22 +103,26 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	// skip expressions until we hit ;
-	if !p.curTokenIs(token.SEMICOLON) {
+	p.nextToken()                          // move past =
+	stmt.Value = p.parseExpression(LOWEST) // parse exp
+	p.nextToken()                          // move past exp
+
+	// skip semicolon if any
+	if p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
-	p.nextToken() // skip the last ;
 
 	return stmt
-
 }
 
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 	p.nextToken()
 
-	// skip expressions until we hit ;
-	if !p.curTokenIs(token.SEMICOLON) {
+	stmt.ReturnValue = p.parseExpression(LOWEST)
+
+	// skip semicolon if any
+	if p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 

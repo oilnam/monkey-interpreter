@@ -8,11 +8,105 @@ import (
 	"testing"
 )
 
-func TestLetStatements(t *testing.T) {
+//func TestLetStatements(t *testing.T) {
+//	input := `
+//		let x = 5;
+//		let y = 10;
+//		let foobar = 838383;`
+//
+//	l := lexer.New(input)
+//	p := New(l)
+//
+//	program := p.ParseProgram()
+//	checkParserErrors(t, p)
+//
+//	if program == nil {
+//		t.Fatalf("parse program returned nil")
+//	}
+//
+//	assert.Len(t, program.Statements, 3)
+//
+//	tests := []struct {
+//		expectedIdentifier string
+//	}{
+//		{"x"},
+//		{"y"},
+//		{"foobar"},
+//	}
+//
+//	for i, tt := range tests {
+//		stmt := program.Statements[i]
+//		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
+//			return
+//		}
+//	}
+//}
+
+func TestNewLetStatements(t *testing.T) {
+	tests := []struct {
+		input              string
+		expectedIdentifier string
+		expectedValue      interface{}
+	}{
+		{"let x = 5;", "x", 5},
+		{"let y = true;", "y", true},
+		{"let foobar = y;", "foobar", "y"},
+	}
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		assert.Len(t, program.Statements, 1)
+
+		stmt := program.Statements[0]
+		// test `let x`
+		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
+			return
+		}
+		// test the value
+		val := stmt.(*ast.LetStatement).Value
+		if !testLiteralExpression(t, val, tt.expectedValue) {
+			return
+		}
+	}
+}
+
+func TestNewReturnStatements(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedValue interface{}
+	}{
+		{"return 5", 5},
+		{"return true", true},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		assert.Len(t, program.Statements, 1)
+
+		returnStmt, ok := program.Statements[0].(*ast.ReturnStatement)
+		assert.True(t, ok)
+		assert.Equal(t, "return", returnStmt.TokenLiteral())
+
+		// test the value
+		if !testLiteralExpression(t, returnStmt.ReturnValue, tt.expectedValue) {
+			return
+		}
+	}
+}
+
+func TestOldReturnStatements(t *testing.T) {
 	input := `
-		let x = 5;
-		let y = 10;
-		let foobar = 838383;`
+	return 5;
+	return 10;
+	return 993322;`
 
 	l := lexer.New(input)
 	p := New(l)
@@ -20,24 +114,17 @@ func TestLetStatements(t *testing.T) {
 	program := p.ParseProgram()
 	checkParserErrors(t, p)
 
-	if program == nil {
-		t.Fatalf("parse program returned nil")
-	}
-
 	assert.Len(t, program.Statements, 3)
 
-	tests := []struct {
-		expectedIdentifier string
-	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
-	}
-
-	for i, tt := range tests {
-		stmt := program.Statements[i]
-		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
-			return
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("stmt not *ast.returnStatement. got=%T", stmt)
+			continue
+		}
+		if returnStmt.TokenLiteral() != "return" {
+			t.Errorf("returnStmt.TokenLiteral not 'return', got %q",
+				returnStmt.TokenLiteral())
 		}
 	}
 }
@@ -77,33 +164,6 @@ func checkParserErrors(t *testing.T, p *Parser) {
 		t.Errorf("parser error: %q", msg)
 	}
 	t.FailNow()
-}
-
-func TestReturnStatements(t *testing.T) {
-	input := `
-	return 5;
-	return 10;
-	return 993322;`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
-
-	assert.Len(t, program.Statements, 3)
-
-	for _, stmt := range program.Statements {
-		returnStmt, ok := stmt.(*ast.ReturnStatement)
-		if !ok {
-			t.Errorf("stmt not *ast.returnStatement. got=%T", stmt)
-			continue
-		}
-		if returnStmt.TokenLiteral() != "return" {
-			t.Errorf("returnStmt.TokenLiteral not 'return', got %q",
-				returnStmt.TokenLiteral())
-		}
-	}
 }
 
 func TestIdentifierExpression(t *testing.T) {
