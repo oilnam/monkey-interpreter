@@ -24,9 +24,6 @@ func TestLetStatements(t *testing.T) {
 		t.Fatalf("parse program returned nil")
 	}
 
-	for i, s := range program.Statements {
-		fmt.Printf("%d => %s\n", i, s)
-	}
 	assert.Len(t, program.Statements, 3)
 
 	tests := []struct {
@@ -277,6 +274,32 @@ func TestFunctionLiteralParsing(t *testing.T) {
 
 	// test the expression
 	testInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
+}
+
+func TestCallExpressionParsing(t *testing.T) {
+	input := `add(1, 2 * 3, 4 + 5);`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is a call expression
+	exp, ok := stmt.Expression.(*ast.CallExpression)
+	assert.True(t, ok)
+
+	if !testIdentifier(t, exp.Function, "add") {
+		return
+	}
+
+	assert.Len(t, exp.Arguments, 3)
+	testLiteralExpression(t, exp.Arguments[0], 1)
+	testInfixExpression(t, exp.Arguments[1], 2, "*", 3)
+	testInfixExpression(t, exp.Arguments[2], 4, "+", 5)
 }
 
 func TestFunctionParameterParsing(t *testing.T) {
@@ -562,6 +585,14 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{
 			"!(true == true)",
 			"(!(true == true))",
+		},
+		{
+			"a + add(b * c) + d",
+			"((a + add((b * c))) + d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
 		},
 	}
 	for _, tt := range tests {

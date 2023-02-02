@@ -42,6 +42,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	// read two tokens so curToken and peekToken are both set
 	p.nextToken()
@@ -106,6 +107,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	if !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
+	p.nextToken() // skip the last ;
 
 	return stmt
 
@@ -225,6 +227,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 // get precedence for peek token (next token)
@@ -376,4 +379,35 @@ func (p *Parser) parseFunctionExpression() ast.Expression {
 	exp.Body = p.parseBlockStatement()
 
 	return exp
+}
+
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+	exp.Arguments = p.parseCallArguments()
+	return exp
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	args := []ast.Expression{}
+
+	// end of args
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return args
+	}
+
+	p.nextToken()                                  // move past `(`
+	args = append(args, p.parseExpression(LOWEST)) // parse exp
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()                                  // move to the comma
+		p.nextToken()                                  // move to the next exp
+		args = append(args, p.parseExpression(LOWEST)) // parse exp
+	}
+
+	// no more commas, so we want a `)` next
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return args
 }
