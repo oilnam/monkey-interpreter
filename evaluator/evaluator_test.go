@@ -76,11 +76,11 @@ func TestBangOperator(t *testing.T) {
 		input    string
 		expected bool
 	}{
-		//{"!true", false},
-		//{"!false", true},
+		{"!true", false},
+		{"!false", true},
 		{"!5", false},
-		//{"!!true", true},
-		//{"!!false", false},
+		{"!!true", true},
+		{"!!false", false},
 		{"!!5", true},
 	}
 	for _, tt := range tests {
@@ -110,6 +110,33 @@ func testIntegerObject(t *testing.T, obj object.Object, expected int64) bool {
 	return true
 }
 
+func TestIfElseExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{"if (true) { 10 }", 10},
+		{"if (false) { 10 }", nil},
+		{"if (1) { 10 }", 10},
+		{"if (1 < 2) { 10 }", 10},
+		{"if (1 > 2) { 10 }", nil},
+		{"if (1 > 2) { 10 } else { 20 }", 20},
+		{"if (1 < 2) { 10 } else { 20 }", 10},
+		// this is an interesting one I added: the way we eval block statements
+		// means we only return the *last* statement of the bunch
+		{"if (true) { 10; 99; }", 99},
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		integer, ok := tt.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(integer))
+		} else {
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
 func testBooleanObject(t *testing.T, obj object.Object, expected bool) bool {
 	result, ok := obj.(*object.Boolean)
 	if !ok {
@@ -119,6 +146,14 @@ func testBooleanObject(t *testing.T, obj object.Object, expected bool) bool {
 	if result.Value != expected {
 		t.Errorf("object has wrong value. got=%t, want=%t",
 			result.Value, expected)
+		return false
+	}
+	return true
+}
+
+func testNullObject(t *testing.T, obj object.Object) bool {
+	if obj != NULL {
+		t.Errorf("object is not NULL. got=%T (%+v)", obj, obj)
 		return false
 	}
 	return true

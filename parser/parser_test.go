@@ -264,6 +264,34 @@ func TestIfExpression(t *testing.T) {
 	assert.Nil(t, exp.Alternative)
 }
 
+// my extra test
+func TestIfWithTwoStatements(t *testing.T) {
+	input := "if (x < y) { x; let y = x; }"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an IfExpression
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	assert.True(t, ok)
+
+	// the first statement of the block is an exp
+	_, ok = exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the second statement of the block is a let statement
+	_, ok = exp.Consequence.Statements[1].(*ast.LetStatement)
+	assert.True(t, ok)
+}
+
 func TestIfElseExpression(t *testing.T) {
 	input := "if (x < y) { x } else { y }"
 

@@ -35,13 +35,19 @@ func Eval(node ast.Node) object.Object {
 		right := Eval(node.Right)
 		left := Eval(node.Left)
 		return evalInfixExpression(node.Operator, left, right)
+	case *ast.BlockStatement:
+		return evalStatements(node.Statements)
+	case *ast.IfExpression:
+		return evalIfExpression(node)
 	}
-	return nil
+	return NULL
 }
 
+// NOTE: this seems to be evaluating *all* statements
+// (so I guess at some point we'll add side effects to it too)
+// but only returns the LAST statement, even if we have more than one.
 func evalStatements(stmts []ast.Statement) object.Object {
 	var result object.Object
-
 	for _, s := range stmts {
 		result = Eval(s)
 	}
@@ -93,7 +99,7 @@ func evalInfixExpression(op string, left, right object.Object) object.Object {
 		case "!=":
 			return &object.Boolean{Value: l.Value != r.Value}
 		default:
-			return nil
+			return NULL
 		}
 	}
 
@@ -118,8 +124,65 @@ func evalInfixExpression(op string, left, right object.Object) object.Object {
 		case "!=":
 			return &object.Boolean{Value: l.Value != r.Value}
 		default:
-			return nil
+			return NULL
 		}
 	}
-	return nil
+	return NULL
 }
+
+// My own implementation, because the one in the book (see below)
+// breaks the tests.
+func evalIfExpression(node *ast.IfExpression) object.Object {
+	cond := Eval(node.Condition)
+
+	if cond.Type() == object.BOOLEAN_OBJ {
+		if cond.(*object.Boolean).Value { // if true
+			if node.Consequence != nil {
+				return Eval(node.Consequence)
+			}
+		} else { // bool is false
+			if node.Alternative != nil {
+				return Eval(node.Alternative)
+			}
+		}
+	}
+	if cond.Type() == object.INTEGER_OBJ {
+		if node.Consequence != nil {
+			return Eval(node.Consequence)
+		}
+	}
+	return NULL
+}
+
+// The following is the implementation suggested in the book,
+// but for some strange reason it doesn't work, so I kept my own.
+//func evalIfExpression(ie *ast.IfExpression) object.Object {
+//	condition := Eval(ie.Condition)
+//	fmt.Printf("got cond %v of type %T\n", condition, condition)
+//	if isTruthy(condition) {
+//		return Eval(ie.Consequence)
+//	} else if ie.Alternative != nil {
+//		return Eval(ie.Alternative)
+//	} else {
+//		return NULL
+//	}
+//}
+//
+//// this always goes to default when evaluating an expression
+//// like (1 > 2), instead of matching FALSE, and I have no idea why
+//func isTruthy(obj object.Object) bool {
+//	switch obj {
+//	case NULL:
+//		fmt.Println("1")
+//		return false
+//	case TRUE:
+//		fmt.Println("2")
+//		return true
+//	case FALSE:
+//		fmt.Println("3")
+//		return false
+//	default:
+//		fmt.Println("4")
+//		return true
+//	}
+//}

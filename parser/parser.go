@@ -111,7 +111,6 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	if p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
-
 	return stmt
 }
 
@@ -336,6 +335,9 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	return exp
 }
 
+// example: given the block `{ x; let y = x; }`, it will return a BlockStatement
+// object with two statements: `x` (an expression) and `let y = x` (a statement)
+// (also check my test TestIfWithTwoStatements)
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	block := &ast.BlockStatement{Token: p.curToken}
 
