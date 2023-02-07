@@ -31,6 +31,10 @@ func Eval(node ast.Node) object.Object {
 	case *ast.PrefixExpression:
 		right := Eval(node.Right)
 		return evalPrefixExpression(node.Operator, right)
+	case *ast.InfixExpression:
+		right := Eval(node.Right)
+		left := Eval(node.Left)
+		return evalInfixExpression(node.Operator, left, right)
 	}
 	return nil
 }
@@ -76,4 +80,46 @@ func evalMinusOperatorExp(exp object.Object) object.Object {
 	}
 	value := exp.(*object.Integer).Value
 	return &object.Integer{Value: -value}
+}
+
+func evalInfixExpression(op string, left, right object.Object) object.Object {
+
+	if left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ {
+		l := left.(*object.Boolean)
+		r := right.(*object.Boolean)
+		switch op {
+		case "==":
+			return &object.Boolean{Value: l.Value == r.Value}
+		case "!=":
+			return &object.Boolean{Value: l.Value != r.Value}
+		default:
+			return nil
+		}
+	}
+
+	l, ok1 := left.(*object.Integer)
+	r, ok2 := right.(*object.Integer)
+	if ok1 && ok2 {
+		switch op {
+		case "+":
+			return &object.Integer{Value: l.Value + r.Value}
+		case "-":
+			return &object.Integer{Value: l.Value - r.Value}
+		case "*":
+			return &object.Integer{Value: l.Value * r.Value}
+		case "/":
+			return &object.Integer{Value: l.Value / r.Value}
+		case "<":
+			return &object.Boolean{Value: l.Value < r.Value}
+		case ">":
+			return &object.Boolean{Value: l.Value > r.Value}
+		case "==":
+			return &object.Boolean{Value: l.Value == r.Value}
+		case "!=":
+			return &object.Boolean{Value: l.Value != r.Value}
+		default:
+			return nil
+		}
+	}
+	return nil
 }
