@@ -142,17 +142,35 @@ func TestReturnStatements(t *testing.T) {
 		input    string
 		expected int64
 	}{
-		//{"return 10;", 10},
-		//{"return 10; 9;", 10},
-		//{"return 2 * 5; 9;", 10},
-		//{"9; return 2 * 5; 9;", 10},
+		{"return 10;", 10},
+		{"return 10; 9;", 10},
+		{"return 2 * 5; 9;", 10},
+		{"9; return 2 * 5; 9;", 10},
 		{
-			`if (10 > 1) { 
-					if (10 > 2) { 
-						return 10; 
-					} 
+			`if (true) {
+						return 10;
+					}
 					return 1;
-					}`, 10},
+					`, 10,
+		},
+		{
+			`if (10 > 1) {
+					if (10 > 2) {
+						return 10;
+					}
+					return 1;
+					}`, 10,
+		},
+		{
+			`if (10 > 1) {
+					if (10 > 2) {
+						if (10 > 3) {
+							return 10;
+						}
+					}
+					return 1;
+					}`, 10,
+		},
 	}
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)

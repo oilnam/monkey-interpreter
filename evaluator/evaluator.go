@@ -50,7 +50,7 @@ func evalProgram(program *ast.Program) object.Object {
 	var result object.Object
 	for _, s := range program.Statements {
 		result = Eval(s)
-		// if we find a returnValue obj, unwrap and return immediately
+		// we unwrap and return the first Return we find
 		if returnValue, ok := result.(*object.ReturnValue); ok {
 			return returnValue.Value
 		}
@@ -58,6 +58,9 @@ func evalProgram(program *ast.Program) object.Object {
 	return result
 }
 
+// here every call to evalBlockSt returns the moment it finds a
+// Return OBJ, so that the first one is always returned
+// since every call to evalBlockSt always returns
 func evalBlockStatement(block *ast.BlockStatement) object.Object {
 	var result object.Object
 	for _, s := range block.Statements {
@@ -69,17 +72,34 @@ func evalBlockStatement(block *ast.BlockStatement) object.Object {
 	return result
 }
 
-// old implementation
-func evalStatements(stmts []ast.Statement) object.Object {
-	var result object.Object
-	for _, s := range stmts {
-		result = Eval(s)
-		if returnValue, ok := result.(*object.ReturnValue); ok {
-			return returnValue.Value
-		}
-	}
-	return result
-}
+// old implementation: this doesn't work bc
+// say we have `if (true) { return 10 } return 1`
+// evalStatements has 2 statements:
+// 1) if true return 10
+// 2) return 1
+// but evaluating (1) calls evalStatement again!
+// so in this inner loop result is set to 10
+// but then evaluating (2) (outer loop) sets result to 1!
+//
+// However, if I have `9; return 1; 9` the statements are all
+// at the same level, and we return immediately at 1
+//
+//func evalStatements(stmts []ast.Statement) object.Object {
+//	fmt.Println("(call)")
+//	for i, s := range stmts {
+//		fmt.Printf("%d -> %s\n", i, s.String())
+//	}
+//
+//	var result object.Object
+//	for _, s := range stmts {
+//		fmt.Println("	evaluating: ", s.String())
+//		result = Eval(s)
+//		if returnValue, ok := result.(*object.ReturnValue); ok {
+//			return returnValue.Value
+//		}
+//	}
+//	return result
+//}
 
 func evalPrefixExpression(op string, right object.Object) object.Object {
 	switch op {
