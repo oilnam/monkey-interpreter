@@ -15,8 +15,8 @@ var (
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	// Statements
-	case *ast.Program:
-		return evalStatements(node.Statements)
+	case *ast.Program: // THIS is the entry point for a program
+		return evalProgram(node)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
 	// Expressions
@@ -36,20 +36,47 @@ func Eval(node ast.Node) object.Object {
 		left := Eval(node.Left)
 		return evalInfixExpression(node.Operator, left, right)
 	case *ast.BlockStatement:
-		return evalStatements(node.Statements)
+		return evalBlockStatement(node)
 	case *ast.IfExpression:
 		return evalIfExpression(node)
+	case *ast.ReturnStatement:
+		val := Eval(node.ReturnValue)
+		return &object.ReturnValue{Value: val}
 	}
 	return NULL
 }
 
-// NOTE: this seems to be evaluating *all* statements
-// (so I guess at some point we'll add side effects to it too)
-// but only returns the LAST statement, even if we have more than one.
+func evalProgram(program *ast.Program) object.Object {
+	var result object.Object
+	for _, s := range program.Statements {
+		result = Eval(s)
+		// if we find a returnValue obj, unwrap and return immediately
+		if returnValue, ok := result.(*object.ReturnValue); ok {
+			return returnValue.Value
+		}
+	}
+	return result
+}
+
+func evalBlockStatement(block *ast.BlockStatement) object.Object {
+	var result object.Object
+	for _, s := range block.Statements {
+		result = Eval(s)
+		if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
+			return result
+		}
+	}
+	return result
+}
+
+// old implementation
 func evalStatements(stmts []ast.Statement) object.Object {
 	var result object.Object
 	for _, s := range stmts {
 		result = Eval(s)
+		if returnValue, ok := result.(*object.ReturnValue); ok {
+			return returnValue.Value
+		}
 	}
 	return result
 }
