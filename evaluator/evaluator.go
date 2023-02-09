@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/object"
 )
@@ -30,10 +31,19 @@ func Eval(node ast.Node) object.Object {
 		}
 	case *ast.PrefixExpression:
 		right := Eval(node.Right)
+		if isError(right) {
+			return right
+		}
 		return evalPrefixExpression(node.Operator, right)
 	case *ast.InfixExpression:
 		right := Eval(node.Right)
+		if isError(right) {
+			return right
+		}
 		left := Eval(node.Left)
+		if isError(left) {
+			return left
+		}
 		return evalInfixExpression(node.Operator, left, right)
 	case *ast.BlockStatement:
 		return evalBlockStatement(node)
@@ -41,6 +51,9 @@ func Eval(node ast.Node) object.Object {
 		return evalIfExpression(node)
 	case *ast.ReturnStatement:
 		val := Eval(node.ReturnValue)
+		if isError(val) {
+			return val
+		}
 		return &object.ReturnValue{Value: val}
 	}
 	return NULL
@@ -54,18 +67,23 @@ func evalProgram(program *ast.Program) object.Object {
 		if returnValue, ok := result.(*object.ReturnValue); ok {
 			return returnValue.Value
 		}
+		// we also immediately return errors
+		if result.Type() == object.ERROR_OBJ {
+			return result
+		}
 	}
 	return result
 }
 
 // here every call to evalBlockSt returns the moment it finds a
-// Return OBJ, so that the first one is always returned
+// Return OR an Error, so that the first one is always returned
 // since every call to evalBlockSt always returns
 func evalBlockStatement(block *ast.BlockStatement) object.Object {
 	var result object.Object
 	for _, s := range block.Statements {
 		result = Eval(s)
-		if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
+		if result != nil &&
+			(result.Type() == object.RETURN_VALUE_OBJ || result.Type() == object.ERROR_OBJ) {
 			return result
 		}
 	}
@@ -108,7 +126,7 @@ func evalPrefixExpression(op string, right object.Object) object.Object {
 	case "-":
 		return evalMinusOperatorExp(right)
 	default:
-		return NULL
+		return newError("unknown operator: %s%s", op, right.Type())
 	}
 }
 
@@ -129,14 +147,19 @@ func evalBangOperatorExp(exp object.Object) object.Object {
 
 func evalMinusOperatorExp(exp object.Object) object.Object {
 	if exp.Type() != object.INTEGER_OBJ {
-		return NULL
+		return newError("unknown operator: -%s", exp.Type())
 	}
 	value := exp.(*object.Integer).Value
 	return &object.Integer{Value: -value}
 }
 
 func evalInfixExpression(op string, left, right object.Object) object.Object {
+	// both sides of an infix exp must be of the same type
+	if left.Type() != right.Type() {
+		return newError("type mismatch: %s %s %s", left.Type(), op, right.Type())
+	}
 
+	// handle bools
 	if left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ {
 		l := left.(*object.Boolean)
 		r := right.(*object.Boolean)
@@ -146,10 +169,11 @@ func evalInfixExpression(op string, left, right object.Object) object.Object {
 		case "!=":
 			return &object.Boolean{Value: l.Value != r.Value}
 		default:
-			return NULL
+			return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
 		}
 	}
 
+	// handle integers
 	l, ok1 := left.(*object.Integer)
 	r, ok2 := right.(*object.Integer)
 	if ok1 && ok2 {
@@ -171,17 +195,21 @@ func evalInfixExpression(op string, left, right object.Object) object.Object {
 		case "!=":
 			return &object.Boolean{Value: l.Value != r.Value}
 		default:
-			return NULL
+			return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
+
 		}
 	}
-	return NULL
+	// everything else: type not supported
+	return newError("unsupported type: %s", left.Type())
 }
 
 // My own implementation, because the one in the book (see below)
 // breaks the tests.
 func evalIfExpression(node *ast.IfExpression) object.Object {
 	cond := Eval(node.Condition)
-
+	if isError(cond) {
+		return cond
+	}
 	if cond.Type() == object.BOOLEAN_OBJ {
 		if cond.(*object.Boolean).Value { // if true
 			if node.Consequence != nil {
@@ -233,3 +261,14 @@ func evalIfExpression(node *ast.IfExpression) object.Object {
 //		return true
 //	}
 //}
+
+func newError(format string, a ...interface{}) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(format, a...)}
+}
+
+func isError(obj object.Object) bool {
+	if obj != nil {
+		return obj.Type() == object.ERROR_OBJ
+	}
+	return false
+}
