@@ -105,10 +105,11 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	p.nextToken()                          // move past =
 	stmt.Value = p.parseExpression(LOWEST) // parse exp
-	p.nextToken()                          // move past exp
 
-	// skip semicolon if any
-	if p.curTokenIs(token.SEMICOLON) {
+	// now token is on exp, as in `let xxx = exp;`
+	// if the next token is `;` move one up so at the next iteration
+	// of parseProgram we skip the `;`
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 	return stmt

@@ -8,39 +8,40 @@ import (
 	"testing"
 )
 
-//func TestLetStatements(t *testing.T) {
-//	input := `
-//		let x = 5;
-//		let y = 10;
-//		let foobar = 838383;`
-//
-//	l := lexer.New(input)
-//	p := New(l)
-//
-//	program := p.ParseProgram()
-//	checkParserErrors(t, p)
-//
-//	if program == nil {
-//		t.Fatalf("parse program returned nil")
-//	}
-//
-//	assert.Len(t, program.Statements, 3)
-//
-//	tests := []struct {
-//		expectedIdentifier string
-//	}{
-//		{"x"},
-//		{"y"},
-//		{"foobar"},
-//	}
-//
-//	for i, tt := range tests {
-//		stmt := program.Statements[i]
-//		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
-//			return
-//		}
-//	}
-//}
+func TestLetStatements(t *testing.T) {
+	// note that ; is optional
+	input := `
+		let x = 5;
+		let y = 10
+		let foobar = 838383;`
+
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if program == nil {
+		t.Fatalf("parse program returned nil")
+	}
+
+	assert.Len(t, program.Statements, 3)
+
+	tests := []struct {
+		expectedIdentifier string
+	}{
+		{"x"},
+		{"y"},
+		{"foobar"},
+	}
+
+	for i, tt := range tests {
+		stmt := program.Statements[i]
+		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
+			return
+		}
+	}
+}
 
 func TestNewLetStatements(t *testing.T) {
 	tests := []struct {
