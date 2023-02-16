@@ -13,7 +13,36 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
+/*
+	Example of a full program evaluation run printing debug info at the beginning of every Eval()
+		`let identity = fn(x) { x; }; identity(5);`
+
+	this program has two statements: `fn(x) { x; }`, and `identity(5)`;
+	since we omitted the `return` keyword, the evaluation of the last statement is returned by evalProgram.
+	If we were to add a return to a statement, the evaluation of that statement would be wrapped in a
+	`Return` object, and evalProgram would return that instead.
+
+	RUN:
+	eval: let identity = fn(x) x; identity(5) of type *ast.Program
+
+	--- eval program statement:  let identity = fn(x) x;
+	eval: let identity = fn(x) x; of type *ast.LetStatement
+	eval: fn(x) x of type *ast.FunctionLiteral // at this point, `let` binds  `identity` to a Function Object
+
+	--- eval program statement:  identity(5)
+	eval: identity(5) of type *ast.ExpressionStatement
+	eval: identity(5) of type *ast.CallExpression
+	eval: identity of type *ast.Identifier // get the object associated to it, the FUNC we bound
+	eval: 5 of type *ast.IntegerLiteral // eval the arguments
+
+	--apply the function--
+	eval: x of type *ast.BlockStatement // eval the body of the func
+	eval: x of type *ast.ExpressionStatement
+	eval: x of type *ast.Identifier // get the object associated to it, 5
+*/
+
 func Eval(node ast.Node, env *object.Environment) object.Object {
+	//fmt.Printf("eval: %s of type %T\n", node.String(), node)
 	switch node := node.(type) {
 	// Statements
 	case *ast.Program: // THIS is the entry point for a program
@@ -69,7 +98,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			Body:       node.Body,
 			Env:        env}
 	case *ast.CallExpression:
-		function := Eval(node.Function, env) // Function is an Identifier or FunctionLiteral
+		function := Eval(node.Function, env) // Function is an Identifier - myFunc() - or FunctionLiteral
 		if isError(function) {
 			return function
 		}
@@ -85,6 +114,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 func evalProgram(program *ast.Program, env *object.Environment) object.Object {
 	var result object.Object
 	for _, s := range program.Statements {
+		//fmt.Println("--- eval program statement: ", s.String())
 		result = Eval(s, env)
 		// we unwrap and return the first Return we find
 		if returnValue, ok := result.(*object.ReturnValue); ok {
@@ -95,6 +125,7 @@ func evalProgram(program *ast.Program, env *object.Environment) object.Object {
 			return result
 		}
 	}
+	// without explicit return, we always return the evaluation of the last statement
 	return result
 }
 
@@ -311,22 +342,20 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		return newError("not a function: %s", fn.Type())
 	}
 
-	extendedEnv := extendFunctionEnv(function, args)
+	// we cannot just evaluate the function body, we need to bind the arguments it was called with to the env;
+	// we also don't want to override old bindings (defined in outer functions)
+
+	// so we create a new clean env, with a link to the function env (the outer env)
+	extendedEnv := object.NewEnclosedEnvironment(function.Env)
+
+	// and we bind the params to our new env
+	for i, param := range function.Parameters {
+		extendedEnv.Set(param.Value, args[i])
+	}
+
 	evaluated := Eval(function.Body, extendedEnv)
 	return unwrapReturnValue(evaluated)
 
-}
-
-// create a new inner environment with the params passed to the function,
-// where the function is evaluated,
-// and a pointer to the outer env which is the one that came with the func
-// (enclosed by the function environment)
-func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
-	env := object.NewEnclosedEnvironment(fn.Env)
-	for paramIdx, param := range fn.Parameters {
-		env.Set(param.Value, args[paramIdx])
-	}
-	return env
 }
 
 func unwrapReturnValue(obj object.Object) object.Object {
