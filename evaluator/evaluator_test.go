@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"github.com/stretchr/testify/assert"
 	"monkey/lexer"
 	"monkey/object"
 	"monkey/parser"
@@ -36,6 +37,14 @@ func TestEvalIntegerExpression(t *testing.T) {
 		evaluated := testEval(tt.input)
 		testIntegerObject(t, evaluated, tt.expected)
 	}
+}
+
+func TestStringLiteral(t *testing.T) {
+	input := `"Hello World!"`
+	evaluated := testEval(input)
+	str, ok := evaluated.(*object.String)
+	assert.True(t, ok)
+	assert.Equal(t, "Hello World!", str.Value)
 }
 
 func TestEvalBooleanExpression(t *testing.T) {

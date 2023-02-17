@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"monkey/token"
+	"strings"
 )
 
 type Lexer struct {
@@ -58,6 +59,18 @@ func (l *Lexer) readNumber() string {
 	return l.input[initPosition:l.position]
 }
 
+// read a whole string
+func (l *Lexer) readString() string {
+	position := l.position + 1 // skip first quote
+	for {
+		l.readChar()
+		if l.ch == '"' || l.ch == 0 {
+			break
+		}
+	}
+	return l.input[position:l.position]
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -101,10 +114,14 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LT, l.ch)
 	case '>':
 		tok = newToken(token.GT, l.ch)
+	case '"':
+		tok.Type = token.STRING
+		tok.Literal = l.readString()
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
 	default:
+		// must be an identifier, or a number
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
@@ -143,4 +160,10 @@ func isLetter(ch byte) bool {
 
 func isNumber(ch byte) bool {
 	return '0' <= ch && ch <= '9'
+}
+
+func stripFormatting(s string) string {
+	s = strings.ReplaceAll(s, "\t", "")
+	s = strings.ReplaceAll(s, "\n", "")
+	return s
 }

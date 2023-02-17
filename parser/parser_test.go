@@ -231,6 +231,25 @@ func TestBooleanExpression(t *testing.T) {
 	assert.Equal(t, "true", ident.TokenLiteral())
 }
 
+func TestStringLiteralExpression(t *testing.T) {
+	input := `"hello world";`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+
+	// the first (and only) statement is an ExpressionStatement
+	stmt := program.Statements[0].(*ast.ExpressionStatement)
+
+	// the expression of the statement is a StringLiteral
+	literal, ok := stmt.Expression.(*ast.StringLiteral)
+	assert.True(t, ok)
+	assert.Equal(t, "hello world", literal.Value)
+}
+
 func TestIfExpression(t *testing.T) {
 	input := "if (x < y) { x }"
 
