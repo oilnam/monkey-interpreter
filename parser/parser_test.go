@@ -432,6 +432,30 @@ func TestParsingArrayLiterals(t *testing.T) {
 	testInfixExpression(t, array.Elements[2], 3, "+", 3)
 }
 
+func TestParsingIndexExpressions(t *testing.T) {
+	input := "myArray[1 + 1]"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an index exp
+	indexExp, ok := stmt.Expression.(*ast.IndexExpression)
+	assert.True(t, ok)
+
+	if !testIdentifier(t, indexExp.Left, "myArray") {
+		return
+	}
+	if !testInfixExpression(t, indexExp.Index, 1, "+", 1) {
+		return
+	}
+}
+
 func TestFunctionParameterParsing(t *testing.T) {
 	tests := []struct {
 		input          string
@@ -723,6 +747,10 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{
 			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
 			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"a * [1, 2, 3, 4][b * c] * d",
+			"((a * ([1, 2, 3, 4][(b * c)])) * d)",
 		},
 	}
 	for _, tt := range tests {

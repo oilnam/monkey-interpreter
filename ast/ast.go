@@ -251,7 +251,7 @@ func (ce *CallExpression) String() string {
 
 // ARRAYS
 type ArrayLiteral struct {
-	Token    token.Token
+	Token    token.Token // the [ token
 	Elements []Expression
 }
 
@@ -267,4 +267,17 @@ func (al *ArrayLiteral) String() string {
 	out.WriteString(strings.Join(elements, ", "))
 	out.WriteString("]")
 	return out.String()
+}
+
+// INDEX EXPRESSIONS
+type IndexExpression struct {
+	Token token.Token // the [ token
+	Left  Expression  // identifier, array literal, function call...
+	Index Expression  // so we can do things like array[1+1], array[$var]
+}
+
+func (ie *IndexExpression) expressionNode()      {}
+func (ie *IndexExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IndexExpression) String() string {
+	return "(" + ie.Left.String() + "[" + ie.Index.String() + "])"
 }
