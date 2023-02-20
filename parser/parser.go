@@ -32,6 +32,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionExpression)
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 
 	// register INFIX parse functions
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -393,22 +394,31 @@ func (p *Parser) parseFunctionExpression() ast.Expression {
 	return exp
 }
 
+// both Call Expressions and Array literals are instances of parsing
+// an expression list: only the parenthesis are different
+// (arg1, arg2, ...) vs [elem1, elem2, ...]
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
-	exp.Arguments = p.parseCallArguments()
+	exp.Arguments = p.parseExpressionList(token.RPAREN)
 	return exp
 }
 
-func (p *Parser) parseCallArguments() []ast.Expression {
+func (p *Parser) parseArrayLiteral() ast.Expression {
+	array := &ast.ArrayLiteral{Token: p.curToken}
+	array.Elements = p.parseExpressionList(token.RBRACKET)
+	return array
+}
+
+func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 	args := []ast.Expression{}
 
-	// end of args
-	if p.peekTokenIs(token.RPAREN) {
+	// end of args, we found the end token: `)` or `]` or whatever
+	if p.peekTokenIs(end) {
 		p.nextToken()
 		return args
 	}
 
-	p.nextToken()                                  // move past `(`
+	p.nextToken()                                  // move past `(` or `[`
 	args = append(args, p.parseExpression(LOWEST)) // parse exp
 
 	for p.peekTokenIs(token.COMMA) {
@@ -417,8 +427,8 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 		args = append(args, p.parseExpression(LOWEST)) // parse exp
 	}
 
-	// no more commas, so we want a `)` next
-	if !p.expectPeek(token.RPAREN) {
+	// no more commas, so we want the end-token next
+	if !p.expectPeek(end) {
 		return nil
 	}
 	return args
