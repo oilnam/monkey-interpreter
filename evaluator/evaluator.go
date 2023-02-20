@@ -329,11 +329,15 @@ func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Ob
 //}
 
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
-	val, ok := env.Get(node.Value) // get the obj associated to this identifier
-	if !ok {
-		return newError("identifier not found: " + node.Value)
+	// get the obj associated to this identifier from the env
+	if val, ok := env.Get(node.Value); ok {
+		return val
 	}
-	return val
+	// lookup identifier from builtins
+	if b, ok := builtins[node.Value]; ok {
+		return b
+	}
+	return newError("identifier not found: " + node.Value)
 }
 
 func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
@@ -348,26 +352,28 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 	return result
 }
 
-func applyFunction(fn object.Object, args []object.Object) object.Object {
-	function, ok := fn.(*object.Function)
-	if !ok {
-		return newError("not a function: %s", fn.Type())
+func applyFunction(function object.Object, args []object.Object) object.Object {
+	switch fn := function.(type) {
+	// user-defined function
+	case *object.Function:
+		// we cannot just evaluate the function body, we need to bind the arguments it was called with to the env;
+		// we also don't want to override old bindings (defined in outer functions)
+
+		// so we create a new clean env, with a link to the function env (the outer env)
+		extendedEnv := object.NewEnclosedEnvironment(fn.Env)
+
+		// and we bind the params to our new env
+		for i, param := range fn.Parameters {
+			extendedEnv.Set(param.Value, args[i])
+		}
+
+		evaluated := Eval(fn.Body, extendedEnv)
+		return unwrapReturnValue(evaluated)
+	// built-in function
+	case *object.Builtin:
+		return fn.Fn(args...)
 	}
-
-	// we cannot just evaluate the function body, we need to bind the arguments it was called with to the env;
-	// we also don't want to override old bindings (defined in outer functions)
-
-	// so we create a new clean env, with a link to the function env (the outer env)
-	extendedEnv := object.NewEnclosedEnvironment(function.Env)
-
-	// and we bind the params to our new env
-	for i, param := range function.Parameters {
-		extendedEnv.Set(param.Value, args[i])
-	}
-
-	evaluated := Eval(function.Body, extendedEnv)
-	return unwrapReturnValue(evaluated)
-
+	return newError("not a function: %s", function.Type())
 }
 
 func unwrapReturnValue(obj object.Object) object.Object {
