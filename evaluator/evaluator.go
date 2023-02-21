@@ -17,7 +17,7 @@ var (
 	Example of a full program evaluation run printing debug info at the beginning of every Eval()
 		`let identity = fn(x) { x; }; identity(5);`
 
-	this program has two statements: `fn(x) { x; }`, and `identity(5)`;
+	this program has two statements: `let identity = fn(x) { x; }`, and `identity(5)`;
 	since we omitted the `return` keyword, the evaluation of the last statement is returned by evalProgram.
 	If we were to add a return to a statement, the evaluation of that statement would be wrapped in a
 	`Return` object, and evalProgram would return that instead.
@@ -36,8 +36,8 @@ var (
 	eval: 5 of type *ast.IntegerLiteral // eval the arguments
 
 	--apply the function--
-	eval: x of type *ast.BlockStatement // eval the body of the func
-	eval: x of type *ast.ExpressionStatement
+	eval: x of type *ast.BlockStatement // eval the body of the func, { x }, which is a blockSt
+	eval: x of type *ast.ExpressionStatement // x
 	eval: x of type *ast.Identifier // get the object associated to it, 5
 */
 
@@ -109,6 +109,22 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(node.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
+	case *ast.IndexExpression:
+		evIndex := Eval(node.Index, env)
+		if isError(evIndex) {
+			return evIndex
+		}
+		evLeft := Eval(node.Left, env)
+		if isError(evLeft) {
+			return evLeft
+		}
+		return evalIndexExpression(evLeft, evIndex)
 	}
 	return NULL
 }
@@ -381,6 +397,21 @@ func unwrapReturnValue(obj object.Object) object.Object {
 		return returnValue.Value
 	}
 	return obj
+}
+
+func evalIndexExpression(array, index object.Object) object.Object {
+	switch {
+	case array.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		arrayObj := array.(*object.Array)
+		idx := index.(*object.Integer).Value
+		max := int64(len(arrayObj.Elements) - 1)
+		if idx < 0 || idx > max {
+			return NULL
+		}
+		return arrayObj.Elements[idx]
+	default:
+		return newError("index operator not supported: %s", array.Type())
+	}
 }
 
 func newError(format string, a ...interface{}) *object.Error {
