@@ -307,6 +307,11 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`len("hello world")`, 11},
 		{`len(1)`, "argument to `len` not supported, got INTEGER"},
 		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
+		{`let array = [1,2,3]; len(array)`, 3},
+		{`let array = []; len(array)`, 0},
+		{`len([1])`, 1},
+		{`last([1,2,3])`, 3},
+		{`last([])`, NULL},
 	}
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
@@ -322,6 +327,8 @@ func TestBuiltinFunctions(t *testing.T) {
 			if errObj.Message != expected {
 				t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
 			}
+		case *object.Null:
+			testNullObject(t, evaluated)
 		}
 	}
 }
