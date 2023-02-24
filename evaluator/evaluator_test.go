@@ -345,6 +345,23 @@ func TestArrayLiterals(t *testing.T) {
 	testIntegerObject(t, result.Elements[2], 6)
 }
 
+func TestHashLiterals(t *testing.T) {
+	input := `{"one": 1, "two": 2, "three": "three", "true": true}`
+	evaluated := testEval(input)
+
+	result, ok := evaluated.(*object.HashMap)
+	assert.True(t, ok)
+
+	expected := map[string]interface{}{
+		"one":   1,
+		"two":   2,
+		"three": "three",
+		"true":  true,
+	}
+	assert.ObjectsAreEqualValues(expected, result)
+
+}
+
 func TestArrayIndexExpressions(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -380,6 +397,40 @@ func TestArrayIndexExpressions(t *testing.T) {
 		},
 		{
 			"[1, 2, 3][-1]",
+			nil,
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		integer, ok := tt.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(integer))
+		} else {
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
+func TestHashIndexExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{
+			`{"foo": 5}["foo"]`,
+			5,
+		},
+		{
+			`{"foo": 5}["bar"]`,
+			nil,
+		},
+		{
+			`let key = "foo"; {"foo": 5}[key]`,
+			5,
+		},
+		{
+			`{}["foo"]`,
 			nil,
 		},
 	}

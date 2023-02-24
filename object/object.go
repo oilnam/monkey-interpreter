@@ -19,6 +19,7 @@ const (
 	STRING_OBJ       = "STRING"
 	BUILTIN_OBJ      = "BUILTIN"
 	ARRAY_OBJ        = "ARRAY"
+	HASHMAP_OBJ      = "HASHMAP"
 )
 
 type Object interface {
@@ -123,3 +124,11 @@ func (ao *Array) Inspect() string {
 	out.WriteString("]")
 	return out.String()
 }
+
+// HASHMAPS
+type HashMap struct {
+	Pairs map[string]Object
+}
+
+func (hm *HashMap) Type() ObjectType { return HASHMAP_OBJ }
+func (hm *HashMap) Inspect() string  { return "hashmap!" }

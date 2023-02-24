@@ -125,6 +125,14 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return evLeft
 		}
 		return evalIndexExpression(evLeft, evIndex)
+	case *ast.HashLiteral:
+		hm := &object.HashMap{Pairs: map[string]object.Object{}}
+		for k, v := range node.Pairs {
+			key := Eval(k, env).(*object.String).Value
+			val := Eval(v, env)
+			hm.Pairs[key] = val
+		}
+		return hm
 	}
 	return NULL
 }
@@ -399,18 +407,26 @@ func unwrapReturnValue(obj object.Object) object.Object {
 	return obj
 }
 
-func evalIndexExpression(array, index object.Object) object.Object {
+func evalIndexExpression(obj, index object.Object) object.Object {
 	switch {
-	case array.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
-		arrayObj := array.(*object.Array)
+	case obj.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		arrayObj := obj.(*object.Array)
 		idx := index.(*object.Integer).Value
 		max := int64(len(arrayObj.Elements) - 1)
 		if idx < 0 || idx > max {
 			return NULL
 		}
 		return arrayObj.Elements[idx]
+	case obj.Type() == object.HASHMAP_OBJ && index.Type() == object.STRING_OBJ:
+		hashObj := obj.(*object.HashMap)
+		key := index.(*object.String).Value
+		val, ok := hashObj.Pairs[key]
+		if !ok {
+			return NULL
+		}
+		return val
 	default:
-		return newError("index operator not supported: %s", array.Type())
+		return newError("index operator not supported: %s", obj.Type())
 	}
 }
 
