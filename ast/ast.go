@@ -249,6 +249,17 @@ func (ce *CallExpression) String() string {
 	return out.String()
 }
 
+// MAP FUNCTION
+type MapFunction struct {
+	Token    token.Token  // the `map` token
+	Function Expression   // Identifier or FunctionLiteral
+	Elements []Expression // same as in ArrayLiteral
+}
+
+func (m *MapFunction) expressionNode()      {}
+func (m *MapFunction) TokenLiteral() string { return m.Token.Literal }
+func (m *MapFunction) String() string       { return "map!" }
+
 // ARRAYS
 type ArrayLiteral struct {
 	Token    token.Token // the [ token

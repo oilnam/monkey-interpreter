@@ -34,6 +34,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FUNCTION, p.parseFunctionExpression)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
+	p.registerPrefix(token.MAP, p.parseMapFunction)
 
 	// register INFIX parse functions
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -473,4 +474,26 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 	}
 
 	return hash
+}
+
+func (p *Parser) parseMapFunction() ast.Expression {
+	mf := &ast.MapFunction{Token: p.curToken}
+	// tokens like: map(fn(x) { x * 2}, [1,2,3])
+
+	// current token is `map`
+	p.expectPeek(token.LPAREN) // expect next to be (, and move to it
+	p.nextToken()              // move past (
+
+	// I first used parseFunctionExpression(), but that would only work for function literals
+	// and not identifiers. Then I remembered that in Monkey they are both expressions!
+	mf.Function = p.parseExpression(LOWEST)
+
+	p.expectPeek(token.COMMA)    // move cur to ,
+	p.expectPeek(token.LBRACKET) // move cur to [
+
+	mf.Elements = p.parseExpressionList(token.RBRACKET) // now cur token is ]
+
+	p.expectPeek(token.RPAREN) // move cur to )
+
+	return mf
 }

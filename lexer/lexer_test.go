@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"github.com/stretchr/testify/assert"
 	"monkey/token"
 	"testing"
 )
@@ -27,6 +28,7 @@ func TestNextToken(t *testing.T) {
 	"hello, world!"
 	[1, 2];
 	{"foo": "bar"}
+	map(fn(x) { x }, [])
 	`
 
 	tests := []struct {
@@ -119,23 +121,28 @@ func TestNextToken(t *testing.T) {
 		{token.COLON, ":"},
 		{token.STRING, "bar"},
 		{token.RBRACE, "}"},
+		{token.MAP, "map"},
+		{token.LPAREN, "("},
+		{token.FUNCTION, "fn"},
+		{token.LPAREN, "("},
+		{token.IDENT, "x"},
+		{token.RPAREN, ")"},
+		{token.LBRACE, "{"},
+		{token.IDENT, "x"},
+		{token.RBRACE, "}"},
+		{token.COMMA, ","},
+		{token.LBRACKET, "["},
+		{token.RBRACKET, "]"},
+		{token.RPAREN, ")"},
 
 		{token.EOF, ""},
 	}
 
 	l := New(input)
 
-	for i, tt := range tests {
+	for _, tt := range tests {
 		tok := l.NextToken()
-
-		if tok.Type != tt.expectedType {
-			t.Fatalf("tests[%d] - type wrong. expected=%q, got=%q",
-				i, tt.expectedType, tok.Type)
-		}
-
-		if tok.Literal != tt.expectedLiteral {
-			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q",
-				i, tt.expectedLiteral, tok.Literal)
-		}
+		assert.Equal(t, tt.expectedType, tok.Type)
+		assert.Equal(t, tt.expectedLiteral, tok.Literal)
 	}
 }

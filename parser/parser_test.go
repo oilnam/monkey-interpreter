@@ -410,6 +410,61 @@ func TestCallExpressionParsing(t *testing.T) {
 	testInfixExpression(t, exp.Arguments[2], 4, "+", 5)
 }
 
+func TestMapFunctionParsing(t *testing.T) {
+	input := `map(fn(x) { x * 2}, [1,2,3])`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is a map function
+	mapFunc, ok := stmt.Expression.(*ast.MapFunction)
+	assert.True(t, ok)
+
+	// test the function, which is a function literal
+	assert.Equal(t, "fn(x) (x * 2)", mapFunc.Function.String())
+
+	// test the array
+	assert.Len(t, mapFunc.Elements, 3)
+	testIntegerLiteral(t, mapFunc.Elements[0], 1)
+	testIntegerLiteral(t, mapFunc.Elements[1], 2)
+	testIntegerLiteral(t, mapFunc.Elements[2], 3)
+}
+
+func TestMapFunctionParsingWithIdentifier(t *testing.T) {
+	input := `let doubler = fn(x) { x * 2 }; map(doubler, [1,2,3])`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 2)
+	// the first statement is a LetStatement
+	assert.IsType(t, &ast.LetStatement{}, program.Statements[0])
+
+	// the second statement is an ExpressionStatement
+	stmt, ok := program.Statements[1].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is a map function
+	mapFunc, ok := stmt.Expression.(*ast.MapFunction)
+	assert.True(t, ok)
+
+	// test the function, which now is an identifier!
+	testIdentifier(t, mapFunc.Function, "doubler")
+
+	// test the array
+	assert.Len(t, mapFunc.Elements, 3)
+	testIntegerLiteral(t, mapFunc.Elements[0], 1)
+	testIntegerLiteral(t, mapFunc.Elements[1], 2)
+	testIntegerLiteral(t, mapFunc.Elements[2], 3)
+}
+
 func TestParsingArrayLiterals(t *testing.T) {
 	input := "[1, 2 * 2, 3 + 3]"
 	l := lexer.New(input)
@@ -566,7 +621,7 @@ func TestParsingPrefixExpressions(t *testing.T) {
 func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
 	integ, ok := il.(*ast.IntegerLiteral)
 	if !ok {
-		t.Errorf("il not *ast.IntegerLiteral. got=%T", il)
+		t.Errorf("is not *ast.IntegerLiteral. got=%T", il)
 		return false
 	}
 	if integ.Value != value {

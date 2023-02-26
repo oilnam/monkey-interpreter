@@ -287,6 +287,38 @@ func TestFunctionApplication(t *testing.T) {
 	}
 }
 
+func TestMapFunction(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`map(fn(x) { x * 2}, []`, []int{}},
+		{`map(fn(x) { x * 2 }, [1,2,1+2])`, []int{2, 4, 6}},
+		{`let doubler = fn(x) { x * 2 }; map(doubler, [1,2,1+2])`, []int{2, 4, 6}},
+		{`map(fn(s) { "ciao " + s + "!" }, ["donald", "duck"]`, []string{"ciao donald!", "ciao duck!"}},
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		array, _ := evaluated.(*object.Array) // the output of map is always an array
+		assert.IsType(t, &object.Array{}, evaluated)
+
+		switch expected := tt.expected.(type) {
+		case []int:
+			assert.Len(t, array.Elements, len(expected))
+			for i, ex := range expected {
+				testIntegerObject(t, array.Elements[i], int64(ex))
+			}
+		case []string:
+			assert.Len(t, array.Elements, len(expected))
+			for i, ex := range expected {
+				testStringObject(t, array.Elements[i], ex)
+			}
+		default:
+			t.Errorf("unexpected of type %T\n", expected)
+		}
+	}
+}
+
 func TestClosures(t *testing.T) {
 	input := `
    let newAdder = fn(x) {
@@ -329,6 +361,10 @@ func TestBuiltinFunctions(t *testing.T) {
 			}
 		case *object.Null:
 			testNullObject(t, evaluated)
+		case []int:
+			array, ok := evaluated.(*object.Array)
+			assert.True(t, ok)
+			testIntegerObject(t, array.Elements[0], int64(expected[0]))
 		}
 	}
 }
@@ -464,6 +500,20 @@ func testIntegerObject(t *testing.T, obj object.Object, expected int64) bool {
 	}
 	if result.Value != expected {
 		t.Errorf("object has wrong value. got=%d, want=%d",
+			result.Value, expected)
+		return false
+	}
+	return true
+}
+
+func testStringObject(t *testing.T, obj object.Object, expected string) bool {
+	result, ok := obj.(*object.String)
+	if !ok {
+		t.Errorf("object is not Integer. got=%T (%+v)", obj, obj)
+		return false
+	}
+	if result.Value != expected {
+		t.Errorf("object has wrong value. got=%s, want=%s",
 			result.Value, expected)
 		return false
 	}

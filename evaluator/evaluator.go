@@ -109,6 +109,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
+	case *ast.MapFunction:
+		function := Eval(node.Function, env)
+		args := evalExpressions(node.Elements, env)
+		return applyMapFunction(function, args)
 	case *ast.ArrayLiteral:
 		elements := evalExpressions(node.Elements, env)
 		if len(elements) == 1 && isError(elements[0]) {
@@ -388,7 +392,7 @@ func applyFunction(function object.Object, args []object.Object) object.Object {
 
 		// and we bind the params to our new env
 		for i, param := range fn.Parameters {
-			extendedEnv.Set(param.Value, args[i])
+			extendedEnv.Set(param.Value, args[i]) // set IDENTIFIER = ARG, e.g. x = 5
 		}
 
 		evaluated := Eval(fn.Body, extendedEnv)
@@ -398,6 +402,23 @@ func applyFunction(function object.Object, args []object.Object) object.Object {
 		return fn.Fn(args...)
 	}
 	return newError("not a function: %s", function.Type())
+}
+
+func applyMapFunction(function object.Object, args []object.Object) object.Object {
+	fn, ok := function.(*object.Function)
+	if !ok {
+		return newError("invalid function: %s", function.Inspect())
+	}
+
+	out := &object.Array{} // the output of a map is always an array
+	// for each arg in list, append fn(arg) to out.Elements
+	for _, arg := range args {
+		fn.Env.Set(fn.Parameters[0].Value, arg) // set IDENTIFIER = arg
+		evaluated := Eval(fn.Body, fn.Env)
+		out.Elements = append(out.Elements, evaluated)
+	}
+
+	return out
 }
 
 func unwrapReturnValue(obj object.Object) object.Object {
