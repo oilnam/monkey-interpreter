@@ -2,7 +2,6 @@ package lexer
 
 import (
 	"monkey/token"
-	"strings"
 )
 
 type Lexer struct {
@@ -39,36 +38,6 @@ func (l *Lexer) peekChar() byte {
 	} else {
 		return l.input[l.readPosition]
 	}
-}
-
-// read a whole identifier (keywords or variable names)
-func (l *Lexer) readIdentifier() string {
-	initPosition := l.position
-	for isLetter(l.ch) {
-		l.readChar()
-	}
-	return l.input[initPosition:l.position]
-}
-
-// read a whole number
-func (l *Lexer) readNumber() string {
-	initPosition := l.position
-	for isNumber(l.ch) {
-		l.readChar()
-	}
-	return l.input[initPosition:l.position]
-}
-
-// read a whole string
-func (l *Lexer) readString() string {
-	position := l.position + 1 // skip first quote
-	for {
-		l.readChar()
-		if l.ch == '"' || l.ch == 0 {
-			break
-		}
-	}
-	return l.input[position:l.position]
 }
 
 func (l *Lexer) NextToken() token.Token {
@@ -109,7 +78,12 @@ func (l *Lexer) NextToken() token.Token {
 	case '-':
 		tok = newToken(token.MINUS, l.ch)
 	case '/':
-		tok = newToken(token.SLASH, l.ch)
+		if l.peekChar() == '/' { // we have a comment
+			tok.Type = token.COMMENT
+			tok.Literal = l.readComment()
+		} else {
+			tok = newToken(token.SLASH, l.ch)
+		}
 	case '*':
 		tok = newToken(token.ASTERISK, l.ch)
 	case '<':
@@ -147,6 +121,47 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
+// read a whole identifier (keywords or variable names)
+func (l *Lexer) readIdentifier() string {
+	initPosition := l.position
+	for isLetter(l.ch) {
+		l.readChar()
+	}
+	return l.input[initPosition:l.position]
+}
+
+// read a whole number
+func (l *Lexer) readNumber() string {
+	initPosition := l.position
+	for isNumber(l.ch) {
+		l.readChar()
+	}
+	return l.input[initPosition:l.position]
+}
+
+// read a whole string
+func (l *Lexer) readString() string {
+	position := l.position + 1 // skip first quote
+	for {
+		l.readChar()
+		if l.ch == '"' || l.ch == 0 {
+			break
+		}
+	}
+	return l.input[position:l.position]
+}
+
+// read a whole comment
+func (l *Lexer) readComment() string {
+	for {
+		l.readChar()
+		if l.ch == '\n' || l.ch == 0 {
+			break
+		}
+	}
+	return "#"
+}
+
 func (l *Lexer) skipWhitespace() {
 	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
 		l.readChar()
@@ -166,10 +181,4 @@ func isLetter(ch byte) bool {
 
 func isNumber(ch byte) bool {
 	return '0' <= ch && ch <= '9'
-}
-
-func stripFormatting(s string) string {
-	s = strings.ReplaceAll(s, "\t", "")
-	s = strings.ReplaceAll(s, "\n", "")
-	return s
 }

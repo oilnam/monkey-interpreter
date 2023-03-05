@@ -56,10 +56,18 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
-// advances both curToken and peekToken
+// advances both curToken and peekToken, skipping comments
 func (p *Parser) nextToken() {
 	p.curToken = p.peekToken
 	p.peekToken = p.l.NextToken()
+	for {
+		if p.curToken.Type != token.COMMENT {
+			break
+		} else {
+			p.curToken = p.peekToken
+			p.peekToken = p.l.NextToken()
+		}
+	}
 }
 
 func (p *Parser) ParseProgram() *ast.Program {

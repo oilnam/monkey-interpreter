@@ -1,3 +1,7 @@
+// This is a code snippet that demonstrates the use of some of the new features I added.
+// ...one being comments ^^
+
+// Another one is a built-in map function that can be used like this:
 let doubler = fn(x) {
     x * 2
 };

@@ -210,6 +210,24 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	assert.Equal(t, "5", ident.TokenLiteral())
 }
 
+func TestExpressionWithComments(t *testing.T) {
+	input := `
+		// this a comment
+		5; 
+		// this is another comment 
+		// over multiple lines
+		true
+		false // bye
+		`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 3)
+}
+
 func TestBooleanExpression(t *testing.T) {
 	input := "true;"
 

@@ -29,6 +29,9 @@ func TestNextToken(t *testing.T) {
 	[1, 2];
 	{"foo": "bar"}
 	map(fn(x) { x }, [])
+	// going to skip all this
+	// and this
+	5
 	`
 
 	tests := []struct {
@@ -134,6 +137,9 @@ func TestNextToken(t *testing.T) {
 		{token.LBRACKET, "["},
 		{token.RBRACKET, "]"},
 		{token.RPAREN, ")"},
+		{token.COMMENT, "#"},
+		{token.COMMENT, "#"},
+		{token.INT, "5"},
 
 		{token.EOF, ""},
 	}
