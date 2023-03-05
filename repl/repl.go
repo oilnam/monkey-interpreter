@@ -34,8 +34,6 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		//fmt.Printf("\tAST representation: %s\n", program.String())
-
 		evaluated := evaluator.Eval(program, env)
 		if evaluated != nil {
 			fmt.Println(evaluated.Inspect())
