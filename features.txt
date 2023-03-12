@@ -8,7 +8,9 @@ Add line numbers to errors (page 132)
 
 Some other ideas:
 
-- Write some code samples
-- Support comments in the code
+- Write some code samples - Done
+- Support comments in the code - Done
+- Support while loops - Done
+- Support variable reassignment
+- Support `for x in array` syntax
 - Support something like structs, or even classes
-- Support for/while loops

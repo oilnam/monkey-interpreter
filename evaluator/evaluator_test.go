@@ -319,6 +319,19 @@ func TestMapFunction(t *testing.T) {
 	}
 }
 
+func TestWhileExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int
+	}{
+		{`let i = 0; while (i > 3) { let i = 1 + 1 } return i`, 0},
+		{`let i = 0; while (i < 3) { let i = i + 1 } return i`, 3},
+	}
+	for _, tt := range tests {
+		testIntegerObject(t, testEval(tt.input), int64(tt.expected))
+	}
+}
+
 func TestClosures(t *testing.T) {
 	input := `
    let newAdder = fn(x) {

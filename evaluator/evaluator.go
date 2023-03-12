@@ -88,6 +88,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalBlockStatement(node, env)
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
+	case *ast.WhileExpression:
+		return evalWhileExpression(node, env)
 	case *ast.ReturnStatement:
 		val := Eval(node.ReturnValue, env)
 		if isError(val) {
@@ -355,6 +357,23 @@ func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Ob
 //		return true
 //	}
 //}
+
+func evalWhileExpression(node *ast.WhileExpression, env *object.Environment) object.Object {
+	cond := Eval(node.Condition, env)
+	if isError(cond) {
+		return cond
+	}
+	if cond.Type() == object.BOOLEAN_OBJ {
+		for {
+			if !cond.(*object.Boolean).Value { // cond is false, exit
+				break
+			}
+			Eval(node.Body, env)
+			cond = Eval(node.Condition, env) // eval condition again!
+		}
+	}
+	return NULL
+}
 
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
 	// get the obj associated to this identifier from the env

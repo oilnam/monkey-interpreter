@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
 	"monkey/token"
 	"strings"
 )
@@ -186,6 +187,19 @@ func (ie *IfExpression) String() string {
 		s += "else " + ie.Alternative.String()
 	}
 	return s
+}
+
+// WHILE is very similar to IF
+type WhileExpression struct {
+	Token     token.Token // the `while` token
+	Condition Expression
+	Body      *BlockStatement
+}
+
+func (we *WhileExpression) expressionNode()      {}
+func (we *WhileExpression) TokenLiteral() string { return we.Token.Literal }
+func (we *WhileExpression) String() string {
+	return fmt.Sprintf("while %s { %s }", we.Condition.String(), we.Body.String())
 }
 
 type BlockStatement struct {

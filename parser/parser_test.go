@@ -886,10 +886,37 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 	}
 }
 
-func TestLalala(t *testing.T) {
-	input := `-1 + 2;`
+func TestWhileLoop(t *testing.T) {
+	// TODO: this doesn't work cause = isn't supported
+	//input := `while (i < 10) { i = i+1 }`
+
+	input := `while (i < 10) { x }`
+
 	l := lexer.New(input)
 	p := New(l)
-	_ = p.ParseProgram()
+	program := p.ParseProgram()
 	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an WhileExpression
+	exp, ok := stmt.Expression.(*ast.WhileExpression)
+	assert.True(t, ok)
+
+	if !testInfixExpression(t, exp.Condition, "i", "<", 10) {
+		return
+	}
+
+	// got 1 body
+	assert.Len(t, exp.Body.Statements, 1)
+	body, ok := exp.Body.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	if !testIdentifier(t, body.Expression, "x") {
+		return
+	}
 }

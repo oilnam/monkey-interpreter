@@ -32,6 +32,7 @@ func TestNextToken(t *testing.T) {
 	// going to skip all this
 	// and this
 	5
+	while (5 < 10)
 	`
 
 	tests := []struct {
@@ -140,7 +141,12 @@ func TestNextToken(t *testing.T) {
 		{token.COMMENT, "#"},
 		{token.COMMENT, "#"},
 		{token.INT, "5"},
-
+		{token.WHILE, "while"},
+		{token.LPAREN, "("},
+		{token.INT, "5"},
+		{token.LT, "<"},
+		{token.INT, "10"},
+		{token.RPAREN, ")"},
 		{token.EOF, ""},
 	}
 

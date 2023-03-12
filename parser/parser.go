@@ -35,6 +35,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
 	p.registerPrefix(token.MAP, p.parseMapFunction)
+	p.registerPrefix(token.WHILE, p.parseWhileExpression)
 
 	// register INFIX parse functions
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -352,6 +353,31 @@ func (p *Parser) parseIfExpression() ast.Expression {
 		exp.Alternative = p.parseBlockStatement()
 	}
 
+	return exp
+}
+
+func (p *Parser) parseWhileExpression() ast.Expression {
+	exp := &ast.WhileExpression{Token: p.curToken}
+	// curToken is `while`; expect ( and move on curToken
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.nextToken() // curToken is `(`; move to the exp
+	exp.Condition = p.parseExpression(LOWEST)
+
+	// expect ) and move on curToken
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	// expect { and move on curToken
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	// parse the whole { ... } block
+	exp.Body = p.parseBlockStatement()
 	return exp
 }
 
