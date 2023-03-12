@@ -887,9 +887,6 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 }
 
 func TestWhileLoop(t *testing.T) {
-	// TODO: this doesn't work cause = isn't supported
-	//input := `while (i < 10) { i = i+1 }`
-
 	input := `while (i < 10) { x }`
 
 	l := lexer.New(input)
@@ -919,4 +916,29 @@ func TestWhileLoop(t *testing.T) {
 	if !testIdentifier(t, body.Expression, "x") {
 		return
 	}
+}
+
+func TestReassignmentExpressionParsing(t *testing.T) {
+	input := `let x = 1; x = 5 + 6`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 2)
+	// the second statement is an ExpressionStatement
+	stmt, ok := program.Statements[1].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is a Reassignment expression
+	exp, ok := stmt.Expression.(*ast.ReassignmentExpression)
+	assert.True(t, ok)
+
+	// left is the x identifier
+	if !testIdentifier(t, exp.Left, "x") {
+		return
+	}
+
+	// right is an infix expression
+	testInfixExpression(t, exp.Right, 5, "+", 6)
 }

@@ -324,8 +324,8 @@ func TestWhileExpression(t *testing.T) {
 		input    string
 		expected int
 	}{
-		{`let i = 0; while (i > 3) { let i = 1 + 1 } return i`, 0},
-		{`let i = 0; while (i < 3) { let i = i + 1 } return i`, 3},
+		{`let i = 0; while (i > 3) { i = 1 + 1 } return i`, 0},
+		{`let i = 0; while (i < 3) { i = i + 1 } return i`, 3},
 	}
 	for _, tt := range tests {
 		testIntegerObject(t, testEval(tt.input), int64(tt.expected))
@@ -336,7 +336,7 @@ func TestClosures(t *testing.T) {
 	input := `
    let newAdder = fn(x) {
      fn(y) { x + y };
-};
+	};
    let addTwo = newAdder(2);
    addTwo(1);`
 	testIntegerObject(t, testEval(input), 3)
@@ -491,6 +491,42 @@ func TestHashIndexExpressions(t *testing.T) {
 			testIntegerObject(t, evaluated, int64(integer))
 		} else {
 			testNullObject(t, evaluated)
+		}
+	}
+}
+
+func TestReassignmentExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`foo = 5; foo`, "identifier not found: foo"},
+		{`let foo = 1; foo = 5; foo`, 5},
+		{`let foo = 1; foo = true; foo`, true},
+		{`let foo = 1; foo = len("abcdef"); foo`, 6},
+		{`let foo = 1; foo = foo; foo`, 1},
+		{`let foo = 1; foo = [1,2,3]; foo`, []int{1, 2, 3}},
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errObj, ok := evaluated.(*object.Error)
+			if !ok {
+				t.Errorf("object is not Error. got=%T (%+v)", evaluated, evaluated)
+				continue
+			}
+			if errObj.Message != expected {
+				t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
+			}
+		case *object.Null:
+			testNullObject(t, evaluated)
+		case []int:
+			array, ok := evaluated.(*object.Array)
+			assert.True(t, ok)
+			testIntegerObject(t, array.Elements[0], int64(expected[0]))
 		}
 	}
 }

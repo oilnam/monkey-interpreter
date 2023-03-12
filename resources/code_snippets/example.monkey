@@ -10,8 +10,12 @@ let out = map(doubler, [1,2,1+2])
 puts(out) // [2,4,6]
 
 // We have good-old while loops as well:
-let x = 10;
-while (x < 100) {
-    let x = x + 10 // TODO: support variable reassignment
-    puts(x)
+let foo = fn(n) {
+    let x = 0
+    while (x < 10) {
+        x = x + 1
+    }
+    return x
 }
+
+puts(foo(0))

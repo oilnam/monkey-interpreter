@@ -171,6 +171,19 @@ func (ie *InfixExpression) String() string {
 	return "(" + ie.Left.String() + " " + ie.Operator + " " + ie.Right.String() + ")"
 }
 
+// REASSIGNMENT EXPRESSION
+type ReassignmentExpression struct {
+	Token token.Token // =
+	Left  *Identifier
+	Right Expression
+}
+
+func (ie *ReassignmentExpression) expressionNode()      {}
+func (ie *ReassignmentExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *ReassignmentExpression) String() string {
+	return ie.Left.String() + " = " + ie.Right.String()
+}
+
 // IF EXPRESSION
 type IfExpression struct {
 	Token       token.Token // the `if` token

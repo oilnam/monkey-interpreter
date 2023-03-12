@@ -267,7 +267,26 @@ func (p *Parser) curPrecedence() int {
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	// normal case, just an identifier
+	if !p.peekTokenIs(token.ASSIGN) {
+		return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	}
+	// we are reassigning a value to an identifier, e.g. `x = 5`
+	// current token is `x`
+	left := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	p.nextToken() // move to `=`
+	tk := p.curToken
+
+	// move to next token and parse it as an expression
+	p.nextToken()
+	right := p.parseExpression(LOWEST)
+
+	return &ast.ReassignmentExpression{
+		Token: tk,
+		Left:  left,
+		Right: right,
+	}
 }
 
 func (p *Parser) parseInteger() ast.Expression {

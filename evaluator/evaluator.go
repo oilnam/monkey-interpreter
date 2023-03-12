@@ -56,6 +56,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	// Expressions
 	case *ast.Identifier:
 		return evalIdentifier(node, env) // eval identifier (a variable)
+	case *ast.ReassignmentExpression:
+		return evalReassignment(node, env)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
 	case *ast.IntegerLiteral:
@@ -385,6 +387,20 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 		return b
 	}
 	return newError("identifier not found: " + node.Value)
+}
+
+func evalReassignment(node *ast.ReassignmentExpression, env *object.Environment) object.Object {
+	// make sure the left identifier is defined
+	if _, ok := env.Get(node.Left.Value); !ok {
+		return newError("identifier not found: " + node.Left.Value)
+	}
+	// eval the right expression
+	value := Eval(node.Right, env)
+
+	// update left identifier
+	env.Set(node.Left.Value, value)
+
+	return value
 }
 
 func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
