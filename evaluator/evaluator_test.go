@@ -531,6 +531,22 @@ func TestReassignmentExpressions(t *testing.T) {
 	}
 }
 
+func TestForLoop(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int
+	}{
+		{`let acc = 0; for i in [1,2,3] { acc = acc + i }; acc`, 6},
+		{`let acc = 0; let xs = [10,20,30]; for i in [0,1,2] { acc = acc + xs[i] }; acc`, 60},
+		{`let acc = 0; for s in ["hello", "world"] { acc = acc + len(s) } acc`, 10},
+		//{`let array = [1,2,3]; let acc = 0; for i in array { acc = acc + i }; acc`, 6}, // TODO: fix this
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		testIntegerObject(t, evaluated, int64(tt.expected))
+	}
+}
+
 // helpers
 
 func testEval(input string) object.Object {

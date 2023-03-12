@@ -92,6 +92,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfExpression(node, env)
 	case *ast.WhileExpression:
 		return evalWhileExpression(node, env)
+	case *ast.ForLoop:
+		return evalForLoop(node, env)
 	case *ast.ReturnStatement:
 		val := Eval(node.ReturnValue, env)
 		if isError(val) {
@@ -373,6 +375,14 @@ func evalWhileExpression(node *ast.WhileExpression, env *object.Environment) obj
 			Eval(node.Body, env)
 			cond = Eval(node.Condition, env) // eval condition again!
 		}
+	}
+	return NULL
+}
+
+func evalForLoop(node *ast.ForLoop, env *object.Environment) object.Object {
+	for _, e := range node.Elements {
+		env.Set(node.Iterator.Value, Eval(e, env)) // set the iterator to the current evaluated element
+		Eval(node.Body, env)
 	}
 	return NULL
 }

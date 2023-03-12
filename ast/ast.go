@@ -215,6 +215,20 @@ func (we *WhileExpression) String() string {
 	return fmt.Sprintf("while %s { %s }", we.Condition.String(), we.Body.String())
 }
 
+// FOR loops, Python style
+type ForLoop struct {
+	Token    token.Token // the `for` token
+	Iterator *Identifier
+	Elements []Expression
+	Body     *BlockStatement
+}
+
+func (fl *ForLoop) expressionNode()      {}
+func (fl *ForLoop) TokenLiteral() string { return fl.Token.Literal }
+func (fl *ForLoop) String() string {
+	return fmt.Sprintf("for %s in %s { %s }", fl.Iterator.String(), fl.Elements, fl.Body)
+}
+
 type BlockStatement struct {
 	Token      token.Token // the `{` token
 	Statements []Statement

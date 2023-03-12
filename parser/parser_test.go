@@ -918,6 +918,43 @@ func TestWhileLoop(t *testing.T) {
 	}
 }
 
+func TestForLoop(t *testing.T) {
+	input := `for i in [1,2,3] { i }`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 1)
+
+	// the first (and only) statement is an ExpressionStatement
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an ForLoop
+	exp, ok := stmt.Expression.(*ast.ForLoop)
+	assert.True(t, ok)
+
+	// test the iterator
+	testIdentifier(t, exp.Iterator, "i")
+
+	// test the elements
+	assert.Len(t, exp.Elements, 3)
+	testIntegerLiteral(t, exp.Elements[0], 1)
+	testIntegerLiteral(t, exp.Elements[1], 2)
+	testIntegerLiteral(t, exp.Elements[2], 3)
+
+	// got 1 body
+	assert.Len(t, exp.Body.Statements, 1)
+	body, ok := exp.Body.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	if !testIdentifier(t, body.Expression, "i") {
+		return
+	}
+}
+
 func TestReassignmentExpressionParsing(t *testing.T) {
 	input := `let x = 1; x = 5 + 6`
 	l := lexer.New(input)

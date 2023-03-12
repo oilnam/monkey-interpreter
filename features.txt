@@ -11,6 +11,9 @@ Some other ideas:
 - Write some code samples - Done
 - Support comments in the code - Done
 - Support while loops - Done
-- Support variable reassignment
+- Support variable reassignment - Done
 - Support `for x in array` syntax
 - Support something like structs, or even classes
+
+Bugs:
+- for loops and map functions only work with array literals (passing an identifier doesn't work)
