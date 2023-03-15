@@ -918,7 +918,7 @@ func TestWhileLoop(t *testing.T) {
 	}
 }
 
-func TestForLoop(t *testing.T) {
+func TestForLoopWithArrayLiteral(t *testing.T) {
 	input := `for i in [1,2,3] { i }`
 
 	l := lexer.New(input)
@@ -944,6 +944,40 @@ func TestForLoop(t *testing.T) {
 	testIntegerLiteral(t, exp.Elements[0], 1)
 	testIntegerLiteral(t, exp.Elements[1], 2)
 	testIntegerLiteral(t, exp.Elements[2], 3)
+
+	// got 1 body
+	assert.Len(t, exp.Body.Statements, 1)
+	body, ok := exp.Body.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	if !testIdentifier(t, body.Expression, "i") {
+		return
+	}
+}
+
+func TestForLoopWithIdentifier(t *testing.T) {
+	input := `let array = [1,2,3]; for i in array { i }`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	assert.Len(t, program.Statements, 2)
+
+	// the second statement is an ExpressionStatement
+	stmt, ok := program.Statements[1].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+
+	// the expression of the statement is an ForLoop
+	exp, ok := stmt.Expression.(*ast.ForLoop)
+	assert.True(t, ok)
+
+	// test the iterator
+	testIdentifier(t, exp.Iterator, "i")
+
+	// test the identifier
+	testIdentifier(t, exp.Ident, "array")
 
 	// got 1 body
 	assert.Len(t, exp.Body.Statements, 1)

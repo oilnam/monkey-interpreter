@@ -380,6 +380,21 @@ func evalWhileExpression(node *ast.WhileExpression, env *object.Environment) obj
 }
 
 func evalForLoop(node *ast.ForLoop, env *object.Environment) object.Object {
+	// looping through an identifier
+	if node.Ident != nil {
+		evald := Eval(node.Ident, env)
+		if array, ok := evald.(*object.Array); !ok {
+			return newError("I can only loop through arrays; got %T instead", evald)
+		} else {
+			for _, a := range array.Elements {
+				env.Set(node.Iterator.Value, a) // set the iterator to the current evaluated element
+				Eval(node.Body, env)
+			}
+			return NULL // don't even try to evaluate array literal
+		}
+	}
+
+	// looping through array literal
 	for _, e := range node.Elements {
 		env.Set(node.Iterator.Value, Eval(e, env)) // set the iterator to the current evaluated element
 		Eval(node.Body, env)

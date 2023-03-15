@@ -413,9 +413,13 @@ func (p *Parser) parseForLoop() ast.Expression {
 	if !p.expectPeek(token.IN) { // curToken is `in`
 		return nil
 	}
+	p.nextToken() // curToken is either `[` or an identifier
 
-	p.nextToken() // curToken is `[`
-	exp.Elements = p.parseExpressionList(token.RBRACKET)
+	if p.curTokenIs(token.LBRACKET) { // parse array literal
+		exp.Elements = p.parseExpressionList(token.RBRACKET)
+	} else { // parse identifier
+		exp.Ident = p.parseIdentifier()
+	}
 
 	p.nextToken() // curToken is `{`
 	exp.Body = p.parseBlockStatement()

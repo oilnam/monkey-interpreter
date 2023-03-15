@@ -219,7 +219,8 @@ func (we *WhileExpression) String() string {
 type ForLoop struct {
 	Token    token.Token // the `for` token
 	Iterator *Identifier
-	Elements []Expression
+	Elements []Expression // for array literals (`for i in [1,2,3])
+	Ident    Expression   // identifier (`let array = ... ; for i in array`)
 	Body     *BlockStatement
 }
 

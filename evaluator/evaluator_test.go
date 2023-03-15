@@ -534,16 +534,29 @@ func TestReassignmentExpressions(t *testing.T) {
 func TestForLoop(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected int
+		expected interface{}
 	}{
 		{`let acc = 0; for i in [1,2,3] { acc = acc + i }; acc`, 6},
 		{`let acc = 0; let xs = [10,20,30]; for i in [0,1,2] { acc = acc + xs[i] }; acc`, 60},
 		{`let acc = 0; for s in ["hello", "world"] { acc = acc + len(s) } acc`, 10},
-		//{`let array = [1,2,3]; let acc = 0; for i in array { acc = acc + i }; acc`, 6}, // TODO: fix this
+		{`let array = [1,2,3]; let acc = 0; for i in array { acc = acc + i }; acc`, 6},
+		{`let x = true; let acc = 0; for i in x { acc = acc + i }; acc`, "I can only loop through arrays; got *object.Boolean instead"},
 	}
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
-		testIntegerObject(t, evaluated, int64(tt.expected))
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errObj, ok := evaluated.(*object.Error)
+			if !ok {
+				t.Errorf("object is not Error. got=%T (%+v)", evaluated, evaluated)
+				continue
+			}
+			if errObj.Message != expected {
+				t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
+			}
+		}
 	}
 }
 
